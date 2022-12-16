@@ -3,16 +3,16 @@ import { config } from 'dotenv';
 import cookieParser from 'cookie-parser';
 import authRoutes from './routes/auth.js';
 import connectDatabase from './config/connect-db.js';
-
+import cors from 'cors';
 config();
 
 const PORT = process.env.PORT || 4000;
 const app = express();
 
-
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
+app.use(cors({ origin: '*', credentials: true }));
 
 app.use('/api/auth', authRoutes);
 

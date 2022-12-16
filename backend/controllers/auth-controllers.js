@@ -1,4 +1,5 @@
 import User from '../models/user.js';
+import jwt from 'jsonwebtoken';
 import {
     generateAccessToken,
     generateRefreshToken,
@@ -78,7 +79,9 @@ const signup = async (req, res, next) => {
 };
 const logout = async (req, res, next) => {
     try {
-        res.send('hello');
+        res.clearCookie('token')
+            .status(200)
+            .json({ success: true, message: 'User logged out' });
     } catch (err) {
         console.log(err);
         res.status(500).json({
@@ -89,7 +92,27 @@ const logout = async (req, res, next) => {
 };
 const refresh = async (req, res, next) => {
     try {
-        res.send('hello');
+        const { token } = req.cookies;
+        const jwtSecretKey = process.env.JWT_SECRET_KEY;
+        const { _id } = jwt.verify(token, jwtSecretKey);
+        const user = await User.findById(_id);
+
+        if (!user || user?.refreshToken !== token) {
+            return res
+                .status(403)
+                .json({ success: true, message: 'Unauthorized access' });
+        }
+        const accessToken = generateAccessToken(user);
+        const refreshToken = generateRefreshToken(user);
+        user.refreshToken = refreshToken;
+        await user.save();
+        res.cookies('token', refreshToken, { httpOnly: true })
+            .status(201)
+            .json({
+                success: true,
+                accessToken,
+                message: 'Token refreshed successfully',
+            });
     } catch (err) {
         console.log(err);
         res.status(500).json({
